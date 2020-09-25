@@ -3,12 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public enum EnemyState
-{
-    Patrol, Chase, Attack
-}
-
-public class EnemyController : MonoBehaviour
+public class EnemyControllerCorouintes : MonoBehaviour
 {
     //The place that the agent will go to
     public Transform goal;
@@ -39,20 +34,26 @@ public class EnemyController : MonoBehaviour
         //Setting the variablet to get the NavMesh Agent data
         agent = GetComponent<NavMeshAgent>();
         mat = GetComponent<Renderer>().material;
+
+        //To start the state machine
+        UpdateState();
     }
 
-    void Patrol()
+    IEnumerator Patrol()
     {
         agent.destination = patrolPoints[point].position;
 
         if (hasSeenPlayer == true)
         {
-            Debug.Log("I see");
             state = EnemyState.Chase;
+            UpdateState();
+            yield break;
         }
 
         if (transform.position.x == patrolPoints[point].position.x)
         {
+            //Wait 2 seconds before moving to the next point
+            yield return new WaitForSecondsRealtime(2f);
             point++;
 
             if (point >= patrolPoints.Length)
@@ -60,9 +61,12 @@ public class EnemyController : MonoBehaviour
                 point = 0;
             }
         }
+
+        yield return new WaitForEndOfFrame();
+        StartCoroutine(Patrol());
     }
 
-    void Chase()
+    IEnumerator Chase()
     {
         Debug.Log("Chase");
         float distance = Vector3.Distance(transform.position, goal.position);
@@ -70,6 +74,7 @@ public class EnemyController : MonoBehaviour
         if (hasSeenPlayer)
         {
             state = EnemyState.Attack;
+            UpdateState();
             agent.isStopped = true;
         }
         else if (distance >= sightDistance)
@@ -81,39 +86,44 @@ public class EnemyController : MonoBehaviour
             agent.destination = goal.position;
             agent.isStopped = false;
         }
+
+        yield return new WaitForEndOfFrame();
+        StartCoroutine(Chase());
     }
 
-    void Attack()
+    IEnumerator Attack()
     {
         Debug.Log("Attack");
         mat.SetColor("_Color", Color.blue);
 
         if (!hasSeenPlayer)
         {
-            Debug.Log("back to chase");
-
             mat.SetColor("_Color", Color.red);
 
             state = EnemyState.Chase;
+            UpdateState();
         }
 
+        //Wait 2 seconds before "Attacking" again
+        yield return new WaitForSecondsRealtime(2f);
+        StartCoroutine(Attack());
     }
 
     // Update is called once per frame
-    void Update()
+    void UpdateState()
     {
         // agent.destination = goal.position;
 
         switch (state)
         {
             case EnemyState.Patrol:
-                Patrol();
+                StartCoroutine(Patrol());
                 break;
             case EnemyState.Chase:
-                //Chase();
+                StartCoroutine(Chase());
                 break;
             case EnemyState.Attack:
-                // Attack();
+                StartCoroutine(Attack());
                 break;
             default:
                 Debug.LogError("Enemy has not returned to a state");
