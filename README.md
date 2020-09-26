@@ -36,5 +36,6 @@ This workshop goes over how to give enemies basic AI! This will go over state ma
 You will however, need to have a few things downloaded:
 
 FPS Controller: https://assetstore.unity.com/packages/tools/input-management/mini-first-person-controller-174710
+
 A* Plugin: https://assetstore.unity.com/packages/tools/ai/polarith-ai-free-movement-steering-92029
 
